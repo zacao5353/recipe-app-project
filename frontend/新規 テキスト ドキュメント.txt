@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>レシピ提案アプリ</title>
+    <style>
+        body { font-family: sans-serif; margin: 20px; line-height: 1.6; background-color: #f4f4f4; color: #333; }
+        .container { max-width: 800px; margin: auto; background: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2 { color: #333; }
+        #ingredientsInput { width: calc(100% - 22px); padding: 10px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 4px; }
+        button { background-color: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; }
+        button:hover { background-color: #0056b3; }
+        #results { margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px; }
+        .recipe-item { background-color: #fff; border: 1px solid #ddd; border-radius: 6px; margin-bottom: 15px; padding: 20px; box-shadow: 0 1px 5px rgba(0,0,0,0.05); }
+        .recipe-name { font-size: 1.4em; font-weight: bold; color: #007bff; margin-bottom: 10px; }
+        .recipe-item p { margin: 5px 0; }
+        .recipe-item ul { list-style: none; padding-left: 0; }
+        .recipe-item ul li { background-color: #e9ecef; border-left: 3px solid #007bff; padding: 8px 10px; margin-bottom: 5px; border-radius: 3px; }
+        .error-message { color: red; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>食材からレシピを提案</h1>
+
+        <p>冷蔵庫にある食材をカンマ区切りで入力してください（例: 鶏肉,玉ねぎ,ピーマン）:</p>
+        <input type="text" id="ingredientsInput" placeholder="食材名を入力 (複数ある場合はカンマで区切る)">
+        <button onclick="getRecipes()">レシピを提案</button>
+
+        <div id="results">
+            <h2>提案されたレシピ:</h2>
+            <div id="recipeList">
+                <p>食材を入力して「レシピを提案」ボタンを押してください。</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function getRecipes() {
+            const ingredientsInput = document.getElementById('ingredientsInput').value;
+            // カンマで分割し、前後の空白を除去して配列にする。空の要素は除外。
+            const recognizedIngredients = ingredientsInput.split(',').map(item => item.trim()).filter(item => item !== '');
+
+            const recipeListDiv = document.getElementById('recipeList');
+            if (recognizedIngredients.length === 0) {
+                recipeListDiv.innerHTML = '<p class="error-message">食材を入力してください。</p>';
+                return;
+            }
+
+            recipeListDiv.innerHTML = '<p>レシピを検索中...</p>'; // 検索中の表示
+
+            try {
+                // FastAPI APIのエンドポイントにリクエストを送信
+                const response = await fetch('http://127.0.0.1:8000/recommend_recipes', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    // 認識された食材の配列をJSON形式でAPIに送信
+                    body: JSON.stringify(recognizedIngredients),
+                });
+
+                if (!response.ok) {
+                    // APIからのエラーレスポンスを詳しく表示
+                    const errorData = await response.json();
+                    throw new Error(`APIエラー (${response.status}): ${errorData.detail || '不明なエラー'}`);
+                }
+
+                const recipes = await response.json(); // APIからのJSONレスポンスを解析
+
+                if (recipes.length === 0) {
+                    recipeListDiv.innerHTML = '<p>入力された食材では、主要材料の条件を満たすレシピが見つかりませんでした。</p>';
+                } else {
+                    recipeListDiv.innerHTML = ''; // レシピリストをクリア
+                    recipes.forEach(recipe => {
+                        const div = document.createElement('div');
+                        div.className = 'recipe-item';
+                        // 手順を<li>タグのリストに変換して表示
+                        const instructionsList = recipe.instructions.split('|').map(step => `<li>${step.trim()}</li>`).join('');
+
+                        div.innerHTML = `
+                            <p class="recipe-name">${recipe.recipe_name}</p>
+                            <p><strong>主要材料:</strong> ${recipe.main_ingredients}</p>
+                            <p><strong>必要材料:</strong> ${recipe.required_ingredients}</p>
+                            <p><strong>手順:</strong> <ul>${instructionsList}</ul></p>
+                            <p><strong>人数:</strong> ${recipe.servings}人分</p>
+                            <p><strong>食事制限:</strong> ${recipe.dietary_restrictions || 'なし'}</p>
+                            <p><strong>類似度:</strong> ${recipe.similarity ? recipe.similarity.toFixed(4) : 'N/A'}</p>
+                        `;
+                        recipeListDiv.appendChild(div);
+                    });
+                }
+
+            } catch (error) {
+                console.error('レシピ取得エラー:', error);
+                recipeListDiv.innerHTML = `<p class="error-message">レシピの取得中にエラーが発生しました: ${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>
