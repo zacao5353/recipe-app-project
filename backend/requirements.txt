@@ -4,7 +4,7 @@ pandas
 scikit-learn
 Pillow
 python-multipart
-tensorflow
+tensorflow-cpu==2.15.0
 torch
 torchvision
 scikit-image
