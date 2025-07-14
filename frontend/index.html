@@ -24,7 +24,7 @@
     <div class="container">
         <h1>食材からレシピを提案</h1>
 
-        <h2>食材名を手入力してください</h2>
+        <h2 style="margin-top: 30px;">食材名を手入力してください</h2>
         <input type="text" id="ingredientsInput" placeholder="食材名を入力 (例: 鶏肉,玉ねぎ,にんじん)">
         <button onclick="getRecipesFromManualInput()">レシピを提案する</button>
 
@@ -39,7 +39,7 @@
     <script>
         const API_BASE_URL = 'https://recipe-app-project-ui64.onrender.com'; // あなたのFastAPIのベースURL
 
-        // ★★★ 追加: 食材の英語名（ローマ字）と日本語名のマッピング ★★★
+        // 食材の英語名（ローマ字）と日本語名のマッピング
         const ingredientMap = {
             'cabbage': 'キャベツ',
             'carrot': 'にんじん',
@@ -65,11 +65,31 @@
             'tofu': '豆腐',
             'sausage': 'ソーセージ',
             'spinach': 'ほうれん草',
-            'bacon': 'ベーコン'
-            // 必要に応じて他の調味料なども追加できますが、今回は主要食材と必要食材のみに焦点を当てています
+            'bacon': 'ベーコン',
+            'soy_sauce': '醤油',
+            'mirin': 'みりん',
+            'miso': '味噌',
+            'ginger': '生姜',
+            'garlic': 'にんにく',
+            'chili_bean_paste': '豆板醤',
+            'sugar': '砂糖',
+            'wheat_flour': '小麦粉',
+            'butter': 'バター',
+            'lemon': 'レモン',
+            'curry_powder': 'カレー粉',
+            'water': '水',
+            'oyster_sauce': 'オイスターソース',
+            'dashi': 'だし',
+            'salt': '塩',
+            'pepper': 'こしょう',
+            'sesame_oil': 'ごま油',
+            'olive_oil': 'オリーブオイル',
+            'vinegar': '酢',
+            'milk': '牛乳',
+            'rice': '米'
         };
 
-        // ★★★ 追加: 英語（ローマ字）名を日本語に変換するヘルパー関数 ★★★
+        // 英語（ローマ字）名を日本語に変換するヘルパー関数
         function convertToJapanese(ingredientString) {
             if (!ingredientString) return '';
             const englishNames = ingredientString.split(' '); // スペースで分割して単語の配列にする
@@ -80,17 +100,7 @@
         // 手入力ボタンの関数
         async function getRecipesFromManualInput() {
             const ingredientsInput = document.getElementById('ingredientsInput').value;
-            // 入力された日本語を内部で使う英語名に変換（逆引きは難しいので、ここではユーザーが英語入力すると仮定するか、
-            // 日本語で入力されたら内部で変換するロジックを別途作る必要があります。
-            // 今回はユーザーが英語（ローマ字）で入力すると仮定し、そのままAPIに送ります。）
-            // 例: もしユーザーが「鶏肉,玉ねぎ」と入力したら、この段階で `['chicken', 'onion']` に変換する必要があります。
-            // しかし、placeholderを英語例にしているので、ひとまずそのまま送る形で進めます。
-            // ユーザーは日本語のプレースホルダーを見て「chicken」と打つことはないでしょうから、
-            // 入力された日本語をこのマップの「値」から「キー」に逆引きするロジックが必要になります。
-            // しかし、逆引きは一意にならないことがあるため、今はユーザーに英語/ローマ字での入力を推奨します。
-            // もし日本語入力必須にするなら、入力された日本語名を内部で検索して英語名に変換する必要があります。
-
-            // ここでは、入力された食材名が直接APIに送られる英語/ローマ字表記であることを前提とします
+            // ユーザーは日本語のプレースホルダーを見て英語（ローマ字）で入力すると仮定
             const recognizedIngredients = ingredientsInput.split(',').map(item => item.trim()).filter(item => item !== '');
 
             getRecipes(recognizedIngredients);
