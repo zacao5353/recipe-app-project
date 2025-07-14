@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, UploadFile, File
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import pandas as pd
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -6,8 +6,9 @@ from sklearn.metrics.pairwise import cosine_similarity
 import re
 import os
 import numpy as np
-from PIL import Image
-import io
+# Pillow, io, Image のインポートは不要になるので削除
+# from PIL import Image
+# import io
 
 # --- ヘルパー関数 ---
 def clean_text(text):
@@ -91,49 +92,11 @@ except Exception as e:
     print(f"CSVファイル読み込みエラー: {e}")
     recipe_df_global = pd.DataFrame()
 
-# --- 画像認識APIエンドポイント ---
-# ここにあなたの機械学習モデルの推論ロジックを記述します。
-# 実際にはモデルのロードと推論ロジックを記述してください。
-def run_ml_model_on_image(image_bytes: bytes) -> list[str]:
-    """
-    ここにあなたの機械学習モデルをロードし、画像から食材を推論するロジックを記述します。
-    """
-    try:
-        image = Image.open(io.BytesIO(image_bytes))
-        # ここで画像の前処理（リサイズ、正規化など）を行う
-        # 例: image = image.resize((224, 224))
-        # 例: image_array = np.array(image) / 255.0
-        # 例: processed_image = np.expand_dims(image_array, axis=0) # モデルが期待する形式に変換
-
-        # ここにモデルの推論コードを記述
-        # recognized_ingredients_from_model = your_model.predict(processed_image)
-
-        # 仮の認識結果を返す（実際のモデルに置き換えるまで）
-        # アップロードされた画像サイズに応じて仮の食材リストを返す
-        if image.width > 800 and image.height > 600:
-            return ["chicken", "onion", "carrot"]
-        elif image.width < 200 and image.height < 200:
-            return ["egg", "tomato"]
-        else:
-            return ["potato", "cabbage"]
-
-    except Exception as e:
-        print(f"画像認識モデルの実行中にエラーが発生しました: {e}")
-        # エラー時は特定のメッセージを返すか、空リストを返す
-        return []
-
-@app.post("/recognize_image")
-async def recognize_image_api(file: UploadFile = File(...)):
-    """
-    画像をアップロードし、食材を認識してリストで返すAPIエンドポイント
-    """
-    try:
-        image_bytes = await file.read()
-        recognized_ingredients = run_ml_model_on_image(image_bytes)
-
-        return {"recognized_ingredients": recognized_ingredients}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"画像認識中にエラーが発生しました: {e}")
+# --- 画像認識APIエンドポイント（削除） ---
+# @app.post("/recognize_image")
+# async def recognize_image_api(file: UploadFile = File(...)):
+#     # ... (画像認識ロジック) ...
+#     pass
 
 # --- レシピ提案APIエンドポイント ---
 @app.post("/recommend_recipes")

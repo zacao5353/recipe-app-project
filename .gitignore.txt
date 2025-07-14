@@ -1,0 +1,22 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.pyc
+
+# Editor backup files
+*~
+*.bak
+
+# Logs and databases
+*.log
+*.db
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Excel temporary files
+*.xlsx
+~$*.xlsx # Excelの一時ファイル
+
+# Frontend temporary files (もしsono2.txtが不要なら)
+frontend/*.txt
