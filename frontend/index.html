@@ -8,7 +8,7 @@
         body { font-family: sans-serif; margin: 20px; line-height: 1.6; background-color: #f4f4f4; color: #333; }
         .container { max-width: 800px; margin: auto; background: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
         h1, h2 { color: #333; }
-        #imageInput, #ingredientsInput { width: calc(100% - 22px); padding: 10px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 4px; }
+        #ingredientsInput { width: calc(100% - 22px); padding: 10px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 4px; }
         button { background-color: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; margin-right: 10px; }
         button:hover { background-color: #0056b3; }
         #results { margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px; }
@@ -18,29 +18,20 @@
         .recipe-item ul { list-style: none; padding-left: 0; }
         .recipe-item ul li { background-color: #e9ecef; border-left: 3px solid #007bff; padding: 8px 10px; margin-bottom: 5px; border-radius: 3px; }
         .error-message { color: red; font-weight: bold; }
-        #uploadedImage { display: none; margin-bottom: 10px; } /* 初期状態では非表示 */
     </style>
 </head>
 <body>
     <div class="container">
         <h1>食材からレシピを提案</h1>
 
-        <h2>1. 食材を撮影またはアップロード</h2>
-        <input type="file" id="imageInput" accept="image/*" capture="camera">
-        <button onclick="processImage()">画像を判定しレシピを提案</button>
-        <div id="imagePreview" style="margin-top: 15px;">
-            <img id="uploadedImage" style="max-width: 100%; max-height: 200px;">
-            <p id="imageStatus"></p>
-        </div>
-
-        <h2 style="margin-top: 30px;">2. または、認識された食材名を手入力</h2>
+        <h2>食材名を手入力してください</h2>
         <input type="text" id="ingredientsInput" placeholder="食材名を入力 (例: 鶏肉,玉ねぎ,にんじん)">
-        <button onclick="getRecipesFromManualInput()">手入力でレシピを提案</button>
+        <button onclick="getRecipesFromManualInput()">レシピを提案する</button>
 
         <div id="results">
             <h2>提案されたレシピ:</h2>
             <div id="recipeList">
-                <p>食材を入力または画像をアップロードしてレシピ提案を開始してください。</p>
+                <p>食材を入力して「レシピを提案」ボタンを押してください。</p>
             </div>
         </div>
     </div>
@@ -48,77 +39,60 @@
     <script>
         const API_BASE_URL = 'https://recipe-app-project-ui64.onrender.com'; // あなたのFastAPIのベースURL
 
-        // 画像選択時のプレビュー表示
-        document.getElementById('imageInput').addEventListener('change', function(event) {
-            const file = event.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    const img = document.getElementById('uploadedImage');
-                    img.src = e.target.result;
-                    img.style.display = 'block'; // 画像を表示
-                    document.getElementById('imageStatus').textContent = file.name + 'が選択されました。';
-                };
-                reader.readAsDataURL(file); // 画像をBase64として読み込む
-            } else {
-                document.getElementById('uploadedImage').style.display = 'none';
-                document.getElementById('imageStatus').textContent = '';
-            }
-        });
+        // ★★★ 追加: 食材の英語名（ローマ字）と日本語名のマッピング ★★★
+        const ingredientMap = {
+            'cabbage': 'キャベツ',
+            'carrot': 'にんじん',
+            'eggplant': 'なす',
+            'onion': '玉ねぎ',
+            'potato': 'じゃがいも',
+            'tomato': 'トマト',
+            'asparagus': 'アスパラガス',
+            'enoki': 'えのき',
+            'okra': 'オクラ',
+            'pumpkin': 'かぼちゃ',
+            'cucumber': 'きゅうり',
+            'shiitake': 'しいたけ',
+            'egg': '卵',
+            'shimeji': 'しめじ',
+            'daikon': '大根',
+            'sake': '酒',
+            'saba': '鯖',
+            'chicken': '鶏肉',
+            'beef': '牛肉',
+            'pork': '豚肉',
+            'moyashi': 'もやし',
+            'tofu': '豆腐',
+            'sausage': 'ソーセージ',
+            'spinach': 'ほうれん草',
+            'bacon': 'ベーコン'
+            // 必要に応じて他の調味料なども追加できますが、今回は主要食材と必要食材のみに焦点を当てています
+        };
 
-        // 画像をAPIに送信し、食材を判定する関数
-        async function processImage() {
-            const imageInput = document.getElementById('imageInput');
-            const file = imageInput.files[0];
-            const imageStatus = document.getElementById('imageStatus');
-            const recipeListDiv = document.getElementById('recipeList');
-
-            if (!file) {
-                imageStatus.textContent = '画像をファイル選択してください。';
-                return;
-            }
-
-            imageStatus.textContent = '画像を判定中...';
-            recipeListDiv.innerHTML = '<p>画像を判定中...</p>';
-
-            try {
-                const formData = new FormData();
-                formData.append('file', file); // 'file' はAPIで受け取る引数名
-
-                const response = await fetch(`${API_BASE_URL}/recognize_image`, {
-                    method: 'POST',
-                    body: formData,
-                });
-
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(`画像判定APIエラー (${response.status}): ${errorData.detail || '不明なエラー'}`);
-                }
-
-                const result = await response.json();
-                // APIから日本語の認識結果が返ってくることを想定
-                const recognizedIngredients = result.recognized_ingredients; 
-
-                if (recognizedIngredients && recognizedIngredients.length > 0) {
-                    imageStatus.textContent = `認識された食材: ${recognizedIngredients.join(', ')}`;
-                    document.getElementById('ingredientsInput').value = recognizedIngredients.join(','); // 手入力欄にも反映
-                    getRecipes(recognizedIngredients); // 認識された食材でレシピ提案を呼び出す
-                } else {
-                    imageStatus.textContent = '食材を認識できませんでした。手入力するか、別の画像を試してください。';
-                    recipeListDiv.innerHTML = '<p>食材を認識できませんでした。</p>';
-                }
-
-            } catch (error) {
-                console.error('画像処理エラー:', error);
-                imageStatus.textContent = `画像処理中にエラーが発生しました: ${error.message}`;
-                recipeListDiv.innerHTML = `<p class="error-message">画像処理中にエラーが発生しました: ${error.message}</p>`;
-            }
+        // ★★★ 追加: 英語（ローマ字）名を日本語に変換するヘルパー関数 ★★★
+        function convertToJapanese(ingredientString) {
+            if (!ingredientString) return '';
+            const englishNames = ingredientString.split(' '); // スペースで分割して単語の配列にする
+            const japaneseNames = englishNames.map(name => ingredientMap[name] || name); // マッピングにあれば変換、なければそのまま
+            return japaneseNames.join('、'); // 日本語の読点で結合
         }
 
         // 手入力ボタンの関数
         async function getRecipesFromManualInput() {
             const ingredientsInput = document.getElementById('ingredientsInput').value;
+            // 入力された日本語を内部で使う英語名に変換（逆引きは難しいので、ここではユーザーが英語入力すると仮定するか、
+            // 日本語で入力されたら内部で変換するロジックを別途作る必要があります。
+            // 今回はユーザーが英語（ローマ字）で入力すると仮定し、そのままAPIに送ります。）
+            // 例: もしユーザーが「鶏肉,玉ねぎ」と入力したら、この段階で `['chicken', 'onion']` に変換する必要があります。
+            // しかし、placeholderを英語例にしているので、ひとまずそのまま送る形で進めます。
+            // ユーザーは日本語のプレースホルダーを見て「chicken」と打つことはないでしょうから、
+            // 入力された日本語をこのマップの「値」から「キー」に逆引きするロジックが必要になります。
+            // しかし、逆引きは一意にならないことがあるため、今はユーザーに英語/ローマ字での入力を推奨します。
+            // もし日本語入力必須にするなら、入力された日本語名を内部で検索して英語名に変換する必要があります。
+
+            // ここでは、入力された食材名が直接APIに送られる英語/ローマ字表記であることを前提とします
             const recognizedIngredients = ingredientsInput.split(',').map(item => item.trim()).filter(item => item !== '');
+
             getRecipes(recognizedIngredients);
         }
 
@@ -159,8 +133,8 @@
 
                         div.innerHTML = `
                             <p class="recipe-name">${recipe.recipe_name}</p>
-                            <p><strong>主要材料:</strong> ${recipe.main_ingredients}</p>
-                            <p><strong>必要材料:</strong> ${recipe.required_ingredients}</p>
+                            <p><strong>主要材料:</strong> ${convertToJapanese(recipe.main_ingredients)}</p>
+                            <p><strong>必要材料:</strong> ${convertToJapanese(recipe.required_ingredients)}</p>
                             <p><strong>手順:</strong> <ul>${instructionsList}</ul></p>
                             <p><strong>人数:</strong> ${recipe.servings}人分</p>
                             <p><strong>食事制限:</strong> ${recipe.dietary_restrictions || 'なし'}</p>
