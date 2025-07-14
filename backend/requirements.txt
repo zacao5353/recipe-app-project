@@ -2,10 +2,3 @@ fastapi
 uvicorn
 pandas
 scikit-learn
-Pillow
-python-multipart
-tensorflow-cpu
-numpy
-torch
-torchvision
-scikit-image
